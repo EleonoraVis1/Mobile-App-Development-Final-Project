@@ -1,0 +1,108 @@
+// -----------------------------------------------------------------------
+// Filename: widget_app_drawer.dart
+// Original Author: Dan Grissom
+// Creation Date: 5/27/2024
+// Copyright: (c) 2024 CSC322
+// Description: This file contains the primary scaffold for the app.
+
+//////////////////////////////////////////////////////////////////////////
+// Imports
+//////////////////////////////////////////////////////////////////////////
+// Flutter external package imports
+import 'package:csc322_starter_app/providers/bottom_index.dart';
+import 'package:csc322_starter_app/providers/provider_activities.dart';
+import 'package:csc322_starter_app/providers/provider_profiles.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
+import 'package:go_router/go_router.dart';
+import 'package:flutter/material.dart';
+
+// App relative file imports
+import '../../widgets/navigation/widget_primary_scaffold.dart';
+import '../../screens/settings/screen_profile_edit.dart';
+import '../../providers/provider_user_profile.dart';
+import '../../screens/settings/screen_settings.dart';
+import '../general/widget_profile_avatar.dart';
+import '../../providers/provider_auth.dart';
+import '../../main.dart';
+
+enum BottomNavSelection { MAIN_PAGE_SCREEN, SEARCH_SCREEN, WEATHER_SCREEN }
+
+//////////////////////////////////////////////////////////////////
+// StateLESS widget which only has data that is initialized when
+// widget is created (cannot update except when re-created).
+//////////////////////////////////////////////////////////////////
+class WidgetAppDrawer extends StatelessWidget {
+  ////////////////////////////////////////////////////////////////
+  // Primary Flutter method overriden which describes the layout
+  // and bindings for this widget.
+  ////////////////////////////////////////////////////////////////
+  @override
+  Widget build(BuildContext context) {
+    return Drawer(
+      child: Consumer(
+        builder: (BuildContext context, WidgetRef ref, Widget? child) {
+          final ProviderAuth _providerAuth = ref.watch(providerAuth);
+          final ProviderUserProfile _providerUserProfile = ref.watch(providerUserProfile);
+
+          return Column(
+            children: <Widget>[
+              AppBar(
+                title: Row(
+                  mainAxisSize: MainAxisSize.max,
+                  children: [
+                    ProfileAvatar(
+                      radius: 15,
+                      userImage: _providerUserProfile.userImage,
+                      userWholeName: _providerUserProfile.wholeName,
+                    ),
+                    const SizedBox(width: 10),
+                    Text('Welcome ${_providerUserProfile.firstName}'),
+                  ],
+                ),
+                // ,
+                automaticallyImplyLeading: false,
+              ),
+              ListTile(leading: Icon(Icons.home), title: Text('Main Page'), onTap: () {
+                  if (ref.read(providerPrimaryBottomNavTabIndex) == 0)
+                    Navigator.of(context).pop();
+                  else
+                    ref.read(providerPrimaryBottomNavTabIndex.notifier).state = 0;
+                }
+              ),
+              Divider(),
+              ListTile(
+                leading: Icon(Icons.settings),
+                title: Text('Settings'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  context.push(ScreenSettings.routeName, extra: false);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.person),
+                title: Text('Profile'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  context.push(ScreenProfileEdit.routeName);
+                },
+              ),
+              Divider(),
+              ListTile(
+                leading: Icon(Icons.exit_to_app),
+                title: Text('Logout'),
+                onTap: () {
+                   ref.read(bottomIndexProvider.notifier).change(0);
+                   ref.read(profilesProvider.notifier).clean();
+                   ref.read(activitiesProvider.notifier).clear();
+                  _providerAuth.clearAuthedUserDetailsAndSignout();
+                  
+                },
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
